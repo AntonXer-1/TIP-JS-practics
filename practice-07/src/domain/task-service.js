@@ -1,0 +1,59 @@
+export function validateTaskDraft(draft, categories) {
+  const title = typeof draft.title === 'string' ? draft.title.trim() : '';
+  const priority = draft.priority;
+  const categoryId = Number(draft.categoryId);
+  const errors = {};
+
+  if (!title || title.length > 100) {
+    errors.title = 'Введите название от 1 до 100 символов.';
+  }
+  if (!['low', 'medium', 'high'].includes(priority)) {
+    errors.priority = 'Выберите приоритет.';
+  }
+  if (!Number.isSafeInteger(categoryId) || !categories.some(category => category.id === categoryId)) {
+    errors.categoryId = 'Выберите категорию.';
+  }
+
+  return { valid: Object.keys(errors).length === 0, value: { title, priority, categoryId }, errors };
+}
+
+export function selectTasks(tasks, filters) {
+  const query = filters.q.trim().toLocaleLowerCase('ru-RU');
+  return tasks.filter(task => {
+    if (filters.completed && task.completed !== (filters.completed === 'true')) {
+      return false;
+    }
+    if (filters.priority && task.priority !== filters.priority) {
+      return false;
+    }
+    if (filters.categoryId && task.categoryId !== Number(filters.categoryId)) {
+      return false;
+    }
+    return task.title.toLocaleLowerCase('ru-RU').includes(query);
+  });
+}
+
+export function getTaskStats(tasks) {
+  const completed = tasks.filter(task => task.completed).length;
+  return { total: tasks.length, completed, active: tasks.length - completed };
+}
+
+export function addTask(tasks, value, id) {
+  if (!Number.isSafeInteger(id) || id <= 0 || tasks.some(task => task.id === id)) {
+    throw new Error('Некорректный или занятый id.');
+  }
+  const { title, priority, categoryId } = value;
+  return [...tasks, { id, title, priority, categoryId, completed: false }];
+}
+
+export function updateTask(tasks, id, { title, priority, categoryId }) {
+  return tasks.map(task => task.id === id ? { ...task, title, priority, categoryId } : task);
+}
+
+export function toggleTask(tasks, id) {
+  return tasks.map(task => task.id === id ? { ...task, completed: !task.completed } : task);
+}
+
+export function removeTask(tasks, id) {
+  return tasks.filter(task => task.id !== id);
+}
